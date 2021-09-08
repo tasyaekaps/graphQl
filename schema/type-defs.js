@@ -38,10 +38,16 @@ const typeDefs = gql`
         # if the input didnt specified nationaility, the default value is Brazil
     }
 
+    input UpdateUsernameInput {
+    id: ID!
+    newUsername: String!
+  }
+
     # type for manipulating data
     type Mutation {
         createUser(input: CreateUserInput!): User
-
+        updateUsername(input: u)
+        deleteUser(id: ID!): User
     }
 
     enum Nationality{
