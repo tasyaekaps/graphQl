@@ -26,6 +26,12 @@ const resolvers = {
             const movie  = _.find(MovieList, {name}) //an operation using lodash
             return movie
         }
+    },
+    //despite for queries type you could give a function to resolve a subfield in another types
+    User:{
+        favoriteMovie: () => {
+            return _.filter( MovieList, (movie) => movie.yearOfPublication >= 2000 && movie.yearOfPublication <= 2010 )
+        }
     }
 }
 
