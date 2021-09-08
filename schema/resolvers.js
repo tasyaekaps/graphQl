@@ -1,7 +1,7 @@
 const { UserList, MovieList } = require("../FakeData")
 const _ = require("lodash")
 const resolvers = {
-    // contain all the resolvers funstion which gonna do call to databases, or send data to fe
+    // contain all the resolvers function which gonna do call to databases, or send data to fe
     Query: { //highest object level
         // all resolvers function for subfield for the types
         users: () => {
@@ -31,6 +31,17 @@ const resolvers = {
     User:{
         favoriteMovie: () => {
             return _.filter( MovieList, (movie) => movie.yearOfPublication >= 2000 && movie.yearOfPublication <= 2010 )
+        }
+    },
+
+    //resolver function to handle mutation tyoe
+    Mutation:{
+        createUser: (parents, args) => {
+            const user = args.input; //because in the subfield createuser we defined input
+            const lastId = userList[userList.length];
+            user.id = lastId + 1;
+            userList.push(user);
+            return user;
         }
     }
 }

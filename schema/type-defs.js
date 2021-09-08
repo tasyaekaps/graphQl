@@ -1,7 +1,6 @@
 const { gql } = require("apollo-server");
 
 const typeDefs = gql`
-    # define all the 
     type User{
         id: ID!
         name:String!
@@ -20,6 +19,7 @@ const typeDefs = gql`
         isInTheaters: Boolean!
     }
 
+    # type for getting datas
     type Query{
         # show list of user
         users: [User!]! 
@@ -27,6 +27,21 @@ const typeDefs = gql`
         user(id: ID!): User!
         movies: [Movie!]!
         movie(name: String!): Movie!
+    }
+
+    # how graphql retrieve the data, define all the field that wanna be inputted
+    input CreateUserInput {
+        name:String!
+        username: String!
+        age: Int!
+        nationality: Nationality = BRAZIL 
+        # if the input didnt specified nationaility, the default value is Brazil
+    }
+
+    # type for manipulating data
+    type Mutation {
+        createUser(input: CreateUserInput!): User
+
     }
 
     enum Nationality{
