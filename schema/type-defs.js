@@ -26,7 +26,7 @@ const typeDefs = gql`
     type Transaction{
         users: User!
         transactionAmm: Int!
-        transactiondetails: TransactionDetail!
+        transactiondetails: TransactionDetail
     }
 
     type Query{
@@ -65,6 +65,7 @@ const typeDefs = gql`
         createUser(input: inputUser!): User
         inputTransaction(input: inputTransaction!): Transaction
         inputTransactionDetail(input: inputTransactionDetails!): TransactionDetail
+        deleteProduct(id:ID!) : [Product!]!
     }
 
 

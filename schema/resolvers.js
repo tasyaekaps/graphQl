@@ -1,11 +1,11 @@
 var bcrypt = require("bcryptjs");
-const md = require("../models");
-const Sequelize = require('sequelize');
-
+const { importModels } = require('../models');
+const { sequelizeInstance, Sequelize } = require('../config/db');
+const md = importModels(sequelizeInstance, Sequelize);
 const resolvers = {
     Query: {
         product: () => {
-            const product = Product.findAll();
+            const product = product.findAll();
         },
 
         transaction: async(parents, args) => {
@@ -21,7 +21,6 @@ const resolvers = {
             raw:true,
             nest:true})
 
-            console.log(resp)
             return resp
         }
 
@@ -88,9 +87,17 @@ const resolvers = {
             )
 
             
-        }
+        },
 
-        
+        deleteProduct: async(parents, args) => {
+            await md.product.destroy({
+                where: {
+                    id: args.id
+                }
+            })
+
+            return (await md.product.findAll())
+        }
 
     }
 }

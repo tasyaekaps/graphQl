@@ -1,50 +1,29 @@
-const dbConfig = require("../config/db.js");
+  
+/* eslint-disable max-len */
+const fs = require('fs');
 
-const Sequelize = require("sequelize");
-const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
-  host: dbConfig.HOST,
-  dialect: dbConfig.dialect,
-  operatorsAliases: false,
+const importModels = (sequelizeInstance, Sequelize) => {
+  const models = {};
 
-  pool: {
-    max: dbConfig.pool.max,
-    min: dbConfig.pool.min,
-    acquire: dbConfig.pool.acquire,
-    idle: dbConfig.pool.idle,
-  },
-});
+  const files = fs.readdirSync(__dirname);
+  files
+    .filter(file => file !== 'index.js' && file.endsWith('.js'))
+    .forEach(file => {
+      const { ModelFn } = require(`${__dirname}/${file}`);
+      const Model = ModelFn(sequelizeInstance, Sequelize);
+      models[Model.name] = Model;
+    });
 
-const db = {};
+  Object.keys(models).forEach(name => {
+    if (
+      typeof models[name].associate !== 'undefined' &&
+      typeof models[name].associate === 'function'
+    ) {
+      models[name].associate(models);
+    }
+  });
 
-db.Sequelize = Sequelize;
-db.sequelize = sequelize;
+  return models;
+};
 
-db.user = require("./user.js")(sequelize, Sequelize);
-db.product = require("./product.js")(sequelize, Sequelize);
-db.transaction = require("./transaction.js")(sequelize, Sequelize);
-db.transactiondetail = require("./transactionsdetail.js")(sequelize, Sequelize);
-
-
-
-db.user.hasMany(db.transaction, { as: "transactions" });
-db.transaction.belongsTo(db.user, {
-  foreignKey: "userId",
-  as: "users",
-});
-
-
-db.transaction.hasMany(db.transactiondetail, { as: "transactiondetails" });
-db.transactiondetail.belongsTo(db.transaction, {
-  foreignKey: "transactionId",
-  as: "transaction",
-});
-
-db.product.hasMany(db.transactiondetail, { as: "product" });
-db.transactiondetail.belongsTo(db.product, {
-  foreignKey: "productId",
-  as: "product",
-});
-
-
-
-module.exports = db;
+module.exports = { importModels };
