@@ -1,69 +1,98 @@
-const { UserList, MovieList } = require("../FakeData")
-const _ = require("lodash")
+var bcrypt = require("bcryptjs");
+const md = require("../models");
+const Sequelize = require('sequelize');
+
 const resolvers = {
-    // contain all the resolvers function which gonna do call to databases, or send data to fe
-    Query: { //highest object level
-        // all resolvers function for subfield for the types
-        users: () => {
-            //tell the graphql what to return 
-            return UserList;
+    Query: {
+        product: () => {
+            const product = Product.findAll();
         },
 
-        user: (parent, args) => {
-            const id = args.id //catch the params
-            const user  = _.find(UserList, {id : Number(id)}) //an operation using lodash
-            return user
-        },
+        transaction: async(parents, args) => {
+           const resp =  await md.transaction.findOne({where:{
+                id: args.id
+            },
+            include: [
+                {model: md.user, as:"users"},
+                {model: md.transactiondetail, include:[
+                    {model: md.product, as:"product"}
+                ], as:"transactiondetails"}
+        ],  
+            raw:true,
+            nest:true})
 
-        // MOVIE RESOLVERS 
-
-        movies: () => {
-            return MovieList;
-        },
-
-        movie: (parents, args) => {
-            const name = args.name //catch the params
-            const movie  = _.find(MovieList, {name}) //an operation using lodash
-            return movie
+            console.log(resp)
+            return resp
         }
-    },
-    //despite for queries type you could give a function to resolve a subfield in another types
-    User:{
-        favoriteMovie: () => {
-            return _.filter( MovieList, (movie) => movie.yearOfPublication >= 2000 && movie.yearOfPublication <= 2010 )
-        }
-    },
 
-    //resolver function to handle mutation tyoe
-    Mutation:{
-        createUser: (parents, args) => {
-            const user = args.input; //because in the subfield createuser we defined input
-            const lastId = userList[userList.length];
-            user.id = lastId + 1;
-            userList.push(user);
+    },
+    
+    
+    Mutation: {
+        createUser: async(parents, args) => {
+            const user = {
+                username: args.input.username,
+                firstName: args.input.firstName,
+                lastName: args.input.lastName,
+                password: bcrypt.hashSync(args.input.password, 8)
+            }
+            await md.user.create(user);
+
             return user;
         },
 
-        updateUsername: (parent, args) => {
-            const { id, newUsername } = args.input;
-            let userUpdated;
-            UserList.forEach((user) => {
-              if (user.id === Number(id)) {
-                user.username = newUsername;
-                userUpdated = user;
-              }
-            });
-      
-            return userUpdated;
-          },
-      
-          deleteUser: (parent, args) => {
-            const id = args.id;
-            _.remove(UserList, (user) => user.id === Number(id));
-            return null;
-          },
-        },
-    }
+        createProduct: async(parents, args) => {
+            const product = args.input
+            await md.product.create(product)
 
+            return product
+        },
+
+        inputTransaction: async(parents, args) => {
+            await md.transaction.create(args.input)
+
+            const tr = await md.transaction.findAll({
+                limit:1,
+                order: [ [ 'createdAt', 'DESC' ]],
+                include: ["users"],
+                raw:true,
+                nest:true
+            })
+
+            return tr[0]
+            
+        },
+
+        inputTransactionDetail: async(parents, args) => {
+            const details = args.input
+            await md.product.findOne({
+                where:{
+                    id: args.input.productId
+                },
+                raw:true
+            }).then((product) => {
+                details.totalAmm = details.productAmm * product.productPrice
+                
+            })
+
+            console.log(details)
+            
+            await md.transactiondetail.create(details)
+
+            const res = await md.transaction.update({
+                'transactionAmm':  Sequelize.literal(` transactionAmm + ${details.totalAmm}`)
+            },
+            {where:{
+                id: details.transactionId
+            }}
+            )
+
+            
+        }
+
+        
+
+    }
+}
 
 module.exports = { resolvers }

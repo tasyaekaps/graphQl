@@ -1,63 +1,73 @@
-const { gql } = require("apollo-server");
+const { gql } = require("apollo-server")
 
 const typeDefs = gql`
+    type Product{
+        id:ID!
+        productName:String!
+        productPrice: Int!
+        productStock: Int!
+    }
+
     type User{
-        id: ID!
-        name:String!
+        id:ID!
+        firstName:String!
+        lastName: String!
         username: String!
-        age: Int!
-        nationality: String!
-        friends: [User]
-        favoriteMovie: [Movie]
+        password: String!
+    }
+
+    type TransactionDetail{
+        product: Product!
+        productAmm: Int!
+        totalAmm: Int!
 
     }
 
-    type Movie {
-        id: ID!
-        name: String!
-        yearOfPublication: Int!
-        isInTheaters: Boolean!
+    type Transaction{
+        users: User!
+        transactionAmm: Int!
+        transactiondetails: TransactionDetail!
     }
 
-    # type for getting datas
     type Query{
-        # show list of user
-        users: [User!]! 
-        # show single user by an id as param
-        user(id: ID!): User!
-        movies: [Movie!]!
-        movie(name: String!): Movie!
+        users: [User!]!
+        transactions: [Transaction!]!
+        product: [Product!]!
+        transaction(id: ID!) : Transaction!
     }
 
-    # how graphql retrieve the data, define all the field that wanna be inputted
-    input CreateUserInput {
-        name:String!
+    input InputProduct{
+        productName: String!
+        productPrice: Int!
+        productStock: Int!
+    }
+
+    input inputUser {
         username: String!
-        age: Int!
-        nationality: Nationality = BRAZIL 
-        # if the input didnt specified nationaility, the default value is Brazil
+        firstName: String!
+        lastName: String!
+        password: String!
     }
 
-    input UpdateUsernameInput {
-    id: ID!
-    newUsername: String!
-  }
-
-    # type for manipulating data
-    type Mutation {
-        createUser(input: CreateUserInput!): User
-        updateUsername(input: u)
-        deleteUser(id: ID!): User
+    input inputTransaction {
+        userId: String!
+        transactionAmm: Int!
     }
 
-    enum Nationality{
-        # all the posibble nationality to a user if 1 data is not following the rule. an error appear
-        CANADA,
-        CHILE,
-        BRAZIL,
-        INDIA,
-        GERMANY
+    input inputTransactionDetails {
+        productId: Int!
+        transactionId: String!
+        productAmm: Int!
     }
+
+    type Mutation{
+        createProduct(input: InputProduct!): Product
+        createUser(input: inputUser!): User
+        inputTransaction(input: inputTransaction!): Transaction
+        inputTransactionDetail(input: inputTransactionDetails!): TransactionDetail
+    }
+
+
 `
 
 module.exports = { typeDefs }
