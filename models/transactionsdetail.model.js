@@ -41,24 +41,24 @@ module.exports = {
         sequelizeInstance,
         tableName: 'transactionsdetails',
         modelName: 'TansactionsDetail',
-        underscored: true,
+        underscored: false,
         timestamps: false,
         paranoid: true,
       });
 
-    Order.associate = models => {
+    TransactionsDetail.associate = models => {
       
-        models.TransactionDetail.belongsTo(models.Transaction, {
+        models.TransactionsDetail.belongsTo(models.Transaction, {
           foreignKey: 'transactionId',
           constraints: false,
         }),
-        models.TransactionDetail.belongsTo(models.Product, {
+        models.TransactionsDetail.belongsTo(models.Product, {
           foreignKey: 'productId',
           constraints: false,
         });
       
     };
 
-    return Order;
+    return TransactionsDetail;
   },
 };

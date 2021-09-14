@@ -38,7 +38,7 @@ module.exports = {
         sequelizeInstance,
         tableName: 'products',
         modelName: 'Product',
-        underscored: true,
+        underscored: false,
         timestamps: false,
         paranoid: true,
       });

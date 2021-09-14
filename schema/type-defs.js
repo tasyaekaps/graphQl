@@ -17,16 +17,15 @@ const typeDefs = gql`
     }
 
     type TransactionDetail{
-        product: Product!
-        productAmm: Int!
-        totalAmm: Int!
-
+        product: Product
+        productAmm: Int
+        totalAmm: Int
     }
 
     type Transaction{
-        users: User!
-        transactionAmm: Int!
-        transactiondetails: TransactionDetail
+        users: User
+        transactionAmm: Int
+        transactiondetails: [TransactionDetail]
     }
 
     type Query{
@@ -43,6 +42,7 @@ const typeDefs = gql`
     }
 
     input inputUser {
+        id: ID!
         username: String!
         firstName: String!
         lastName: String!
@@ -50,6 +50,7 @@ const typeDefs = gql`
     }
 
     input inputTransaction {
+        id: ID!
         userId: String!
         transactionAmm: Int!
     }
@@ -64,7 +65,7 @@ const typeDefs = gql`
         createProduct(input: InputProduct!): Product
         createUser(input: inputUser!): User
         inputTransaction(input: inputTransaction!): Transaction
-        inputTransactionDetail(input: inputTransactionDetails!): TransactionDetail
+        inputTransactionDetail(input: inputTransactionDetails!): Transaction
         deleteProduct(id:ID!) : [Product!]!
     }
 

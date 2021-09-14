@@ -5,8 +5,7 @@ const TransactionScheme = Sequelize => {
     
   return {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      type: DataTypes.STRING,
       allowNull: false,
       primaryKey: true
     },
@@ -31,11 +30,11 @@ module.exports = {
   TransactionScheme,
   ModelFn: (sequelizeInstance, Sequelize) => {
     const Transaction = sequelizeInstance
-      .define('Transaction', OrderScheme(Sequelize), {
+      .define('Transaction', TransactionScheme(Sequelize), {
         sequelizeInstance,
         tableName: 'transactions',
         modelName: 'Transaction',
-        underscored: true,
+        underscored: false,
         timestamps: false,
         paranoid: true,
       });

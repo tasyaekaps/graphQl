@@ -9,19 +9,36 @@ const resolvers = {
         },
 
         transaction: async(parents, args) => {
-           const resp =  await md.transaction.findOne({where:{
+           const tr =  await md.Transaction.findOne({where:{
                 id: args.id
-            },
-            include: [
-                {model: md.user, as:"users"},
-                {model: md.transactiondetail, include:[
-                    {model: md.product, as:"product"}
-                ], as:"transactiondetails"}
-        ],  
-            raw:true,
-            nest:true})
+                },
+                include: [
+                    {model: md.User},
+                    {model: md.TransactionsDetail, include:[
+                        {model: md.Product}
+                    ]}
+            ]})
 
-            return resp
+            return {
+                users: {
+                    id:tr.User.id,
+                    firstName:tr.User.firstName,
+                    lastName: tr.User.lastName,
+                    username: tr.User.username,
+                    password: tr.User.password
+                },
+                transactionAmm: tr.transactionAmm,
+                transactiondetails: tr.TransactionsDetails.map(item => {
+                    return{
+                        product: {
+                            id:item.Product.id,
+                            productName:item.Product.productName,
+                            productPrice:item.Product.productPrice,
+                            productStock: item.Product.productStock,
+                        }
+                    }
+                })
+            }
         }
 
     },
@@ -33,38 +50,72 @@ const resolvers = {
                 username: args.input.username,
                 firstName: args.input.firstName,
                 lastName: args.input.lastName,
-                password: bcrypt.hashSync(args.input.password, 8)
+                password: bcrypt.hashSync(args.input.password, 8),
+                createdAt: new Date(),
+                updatedAt: new Date()
             }
-            await md.user.create(user);
+
+            await md.User.create(user);
+
+            
 
             return user;
         },
 
         createProduct: async(parents, args) => {
-            const product = args.input
-            await md.product.create(product)
+            const product = {
+                id: args.input.id,
+                productName: args.input.productName,
+                productPrice: args.input.productPrice,
+                productStock: args.input.productStock,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+
+            await md.Product.create(product)
 
             return product
         },
 
         inputTransaction: async(parents, args) => {
-            await md.transaction.create(args.input)
+            const transInput = {
+                id: args.input.id,
+                userId : args.input.userId,
+                transactionAmm : args.input.transactionAmm,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+            await md.Transaction.create(transInput)
 
-            const tr = await md.transaction.findAll({
-                limit:1,
-                order: [ [ 'createdAt', 'DESC' ]],
-                include: ["users"],
-                raw:true,
-                nest:true
+            const tr = await md.Transaction.findOne({
+                where: {id: transInput.id},
+                include: [{model: md.User}],
             })
 
-            return tr[0]
+            console.log(tr)
+            return {
+                users: {
+                    id:tr.User.id,
+                    firstName:tr.User.firstName,
+                    lastName: tr.User.lastName,
+                    username: tr.User.username,
+                    password: tr.User.password
+                },
+                transactionAmm: tr.transactionAmm,
+                transactiondetails: []
+            }
             
         },
 
         inputTransactionDetail: async(parents, args) => {
-            const details = args.input
-            await md.product.findOne({
+            const details = {
+                transactionId: args.input.transactionId,
+                productId: args.input.productId,
+                productAmm: args.input.productAmm,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+            await md.Product.findOne({
                 where:{
                     id: args.input.productId
                 },
@@ -74,23 +125,62 @@ const resolvers = {
                 
             })
 
-            console.log(details)
-            
-            await md.transactiondetail.create(details)
+            await md.TransactionsDetail.create(details)
 
-            const res = await md.transaction.update({
+            await md.Transaction.update({
                 'transactionAmm':  Sequelize.literal(` transactionAmm + ${details.totalAmm}`)
             },
             {where:{
                 id: details.transactionId
-            }}
+            },
+            include: [{model: md.User}, {model: md.TransactionsDetail}],},
             )
+
+            const tr = await md.Transaction.findOne({
+                where: {
+                  id: details.transactionId
+                },
+                include: [
+                  { model: md.User }, 
+                  {
+                    model: md.TransactionsDetail, 
+                    include: [
+                        {model: md.Product}
+                    ]
+                  }
+                ],
+              });
+
+            
+            return {
+                users: {
+                    id:tr.User.id,
+                    firstName:tr.User.firstName,
+                    lastName: tr.User.lastName,
+                    username: tr.User.username,
+                    password: tr.User.password
+                },
+                transactionAmm: tr.transactionAmm,
+                transactiondetails: tr.TransactionsDetails.map(item => {
+                    return{
+                        product: {
+                            id:item.Product.id,
+                            productName:item.Product.productName,
+                            productPrice:item.Product.productPrice,
+                            productStock: item.Product.productStock,
+                        }
+                    }
+                })
+            }
+
+            // console.log(res)
+            // return res
 
             
         },
 
         deleteProduct: async(parents, args) => {
-            await md.product.destroy({
+            await md.Product.destroy({
                 where: {
                     id: args.id
                 }

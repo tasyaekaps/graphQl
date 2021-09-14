@@ -4,8 +4,7 @@ const UserScheme = Sequelize => {
   const { DataTypes } = Sequelize;
 
   return {id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.STRING,
     allowNull: false,
     primaryKey: true
   },
@@ -20,11 +19,12 @@ const UserScheme = Sequelize => {
   },
   createdAt: {
     allowNull: false,
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
   },
   updatedAt: {
     allowNull: false,
-    type: DataTypes.DATE
+    type: DataTypes.DATE,
+    
   }
   };
 };
@@ -33,11 +33,11 @@ module.exports = {
   UserScheme,
   ModelFn: (sequelizeInstance, Sequelize) => {
     const User = sequelizeInstance
-      .define('User', OrderScheme(Sequelize), {
+      .define('User', UserScheme(Sequelize), {
         sequelizeInstance,
-        tableName: 'users',
+        tableName: 'Users',
         modelName: 'User',
-        underscored: true,
+        underscored: false,
         timestamps: false,
         paranoid: true,
       });
