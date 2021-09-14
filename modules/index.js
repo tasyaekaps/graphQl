@@ -1,95 +1,101 @@
 const fs = require('fs');
 const path = require('path');
 
+const UserMutation = require('./user/Mutation.js');
+const ProductMutation = require('./product/Mutation.js');
+const TransactionMutation = require('./transaction/Mutation.js');
+
+const UserQuery = require('./user/Query.js');
+const ProductQuery = require('./product/Query.js');
+const TransactionQuery = require('./transaction/Query.js');
+
+const UserSchema = require('./user/Schema.js');
+const ProductSchema = require('./product/Schema.js');
+const TransactionSchema = require('./transaction/Schema.js');
 
 const DATASOURCES = 'datasources';
 const SCHEMA = 'Schema.js';
 const QUERY = 'Query.js';
 const MUTATION = 'Mutation.js';
+
 const requiredFiles = [SCHEMA, QUERY, MUTATION];
 
-module.exports = (args = {}) => {
-  const typeDefs = [];
-  const resolvers = {};
-  const datasources = {};
-
-  let queries = [];
-  let mutations = [];
-
-  const modules = fs.readdirSync(__dirname, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name);
-
-  for (const moduleName of modules) {
-    const moduleDir = path.join(__dirname, moduleName);
-    const files = fs.readdirSync(moduleDir)
-      .filter(file => requiredFiles.includes(file));
-
-    if (!files.includes(SCHEMA)) {
-      
-      continue;
-    }
-
-    if (isEmptySchema(moduleDir)) {
-     
-      continue;
-    }
-
-    for (const file of files) {
-      const { typeDef, resolver } = require(path.join(moduleDir, file));
-      if (typeDef.includes('Mutation')) {
-        const { methods, rest } = extractMutation(typeDef);
+module.exports = models => {
+  const typeDefs = [
+    UserMutation.typeDefs,
+    ProductMutation.typeDefs,
+    TransactionMutation.typeDefs
+    UserQuery.typeDefs,
+    ProductQuery.typeDefs,
+    TransactionQuery.typeDefs,
+    UserSchema.typeDefs,
+    ProductSchema.typeDefs,
+    TransactionSchema.typeDefs
+  ];
+  
+  const resolvers = {
+    Mutation: {
+      ...UserMutation.resolvers.Mutation,
+      ...ProductMutation.resolvers.Mutation,
+      ...TransactionMutation.resolvers.Mutation
+    },
+    Query: {
+      ...UserQuery.resolvers.Query,
+      ...ProductQuery.resolvers.Query,
+      ...TransactionQuery.resolvers.Query
+    },
+    ...UserSchema.resolvers,
+    ...ProductSchema.resolvers,
+    ...TransactionSchema.resolvers
+  };
+  
+  const queries_mutations_concat = typeDefs.reduce(
+    (accumulator, typeDefSingleItem) => {
+      if (typeDefSingleItem.includes('Mutation')) {
+        const { methods, rest } = extractMutation(typeDefSingleItem);
+        
         if (rest.length) {
-          typeDefs.push(rest);
+          accumulator.typeDefsNew.push(rest);
         }
-        mutations = mutations.concat(methods);
-      } else if (typeDef.includes('Query')) {
-        const { methods, rest } = extractQuery(typeDef);
+        
+        accumulator.mutations = accumulator.mutations.concat(methods);
+        //
+      } else if (typeDefSingleItem.includes('Query')) {
+        const { methods, rest } = extractQuery(typeDefSingleItem);
         if (rest.length) {
-          typeDefs.push(rest);
+          accumulator.typeDefsNew.push(rest);
         }
-        queries = queries.concat(methods);
+        
+        accumulator.queries = accumulator.queries.concat(methods);
+        //
       } else {
         const typeDefTrim = typeDef
           .split('\n')
           .filter(s => s.trim().length)
           .join('\n');
-        typeDefs.push(typeDefTrim);
+        accumulator.typeDefsNew.push(typeDefTrim);
       }
-
-      for (const field in resolver) {
-        if (!resolvers[field]) {
-          resolvers[field] = resolver[field];
-        } else {
-          Object.assign(resolvers[field], resolver[field]);
-        }
-      }
-
-      
+    },
+    {
+      typeDefsNew: [...typeDefs],
+      queries: [],
+      mutations: []
     }
+  );
+  
+  // Destruct --> men-de-strukturisasi
+  const {
+    queries,
+    mutations,
+    typeDefsNew
+  } = queries_mutations_concat;
 
-    const datasourcesDir = path.join(moduleDir, DATASOURCES);
-    fs.readdirSync(datasourcesDir)
-      .filter(file => file.endsWith('-api.js'))
-      .forEach(file => {
-        const API = require(path.join(datasourcesDir, file));
-        if (typeof API !== 'function') return;
-
-        const apiName = `${API.name.charAt(0).toLowerCase()}${API.name.slice(1)}`;
-        datasources[apiName] = new API(args);
-        
-      });
-
-    
-  }
-
-  typeDefs.push(mergeQuery(queries));
-  typeDefs.push(mergeMutation(mutations));
+  typeDefsNew.push(mergeQuery(queries));
+  typeDefsNew.push(mergeMutation(mutations));
 
   return {
-    typeDefs,
-    resolvers,
-    datasources,
+    typeDefsNew,
+    resolvers
   };
 };
 
