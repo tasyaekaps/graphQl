@@ -1,22 +1,20 @@
-const { gql } = require("apollo-server")
-const { importModels } = require('../models');
-const md = importModels(sequelizeInstance, Sequelize);
-
-const typeDefs = gql`
+const typeDef = `
     input inputTransactionDetails {
         productId: Int!
         transactionId: String!
         productAmm: Int!
     }
-
-    type Mutation{
+    type Mutation {
         inputTransactionDetail(input: inputTransactionDetails!): Transaction
     }
                     `
 
-const resolvers = {
+const resolver = {
     Mutation: {
-        inputTransactionDetail: async(parents, args) => {
+        inputTransactionDetail: async(parents, args, context) => {
+            const { models } = context;
+
+            
             const details = {
                 transactionId: args.input.transactionId,
                 productId: args.input.productId,
@@ -24,7 +22,7 @@ const resolvers = {
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
-            await md.Product.findOne({
+            await models.Product.findOne({
                 where:{
                     id: args.input.productId
                 },
@@ -34,27 +32,27 @@ const resolvers = {
                 
             })
 
-            await md.TransactionsDetail.create(details)
+            await models.TransactionsDetail.create(details)
 
-            await md.Transaction.update({
+            await models.Transaction.update({
                 'transactionAmm':  Sequelize.literal(` transactionAmm + ${details.totalAmm}`)
             },
             {where:{
                 id: details.transactionId
             },
-            include: [{model: md.User}, {model: md.TransactionsDetail}],},
+            include: [{model: models.User}, {model: models.TransactionsDetail}],},
             )
 
-            const tr = await md.Transaction.findOne({
+            const tr = await models.Transaction.findOne({
                 where: {
                   id: details.transactionId
                 },
                 include: [
-                  { model: md.User }, 
+                  { model: models.User }, 
                   {
-                    model: md.TransactionsDetail, 
+                    model: models.TransactionsDetail, 
                     include: [
-                        {model: md.Product}
+                        {model: models.Product}
                     ]
                   }
                 ],
@@ -62,10 +60,10 @@ const resolvers = {
 
             
             return tr;
-
+            
             
         },
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

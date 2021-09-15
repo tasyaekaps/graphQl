@@ -1,9 +1,14 @@
-const typeDefs = `
-
+const typeDef = `
+  type Product {
+    id:ID!
+    productName:String!
+    productPrice: Int!
+    productStock: Int!
+  }
 `
 
-const resolvers = {
-
+const resolver = {
+    
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

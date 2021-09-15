@@ -1,23 +1,9 @@
-const { gql } = require("apollo-server")
-const { importModels } = require('../models');
-const md = importModels(sequelizeInstance, Sequelize);
-
-const typeDefs = gql`
-    type User{
-        id:ID!
-        firstName:String!
-        lastName: String!
-        username: String!
-        password: String!
-    }
-
-    type Query{
+const typeDef = `
+    type Query {
         users: [User!]!
     }
-                    `
+`
 
-const resolvers = {
+const resolver = {}
 
-}
-
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

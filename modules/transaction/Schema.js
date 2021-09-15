@@ -1,12 +1,12 @@
-const { gql } = require("apollo-server")
-const { importModels } = require('../models');
-const md = importModels(sequelizeInstance, Sequelize);
+const typeDef = `
+     type Transaction {
+         users: User
+         transactionAmm: String!
+         transactiondetails: [TransactionDetail]
+     }
+`;
 
-const typeDefs = gql`
-
-`
-
-const resolvers = {
+const resolver = {
     Transaction: {
         users: async (parent, args, context, info) => {
             return {
@@ -35,4 +35,4 @@ const resolvers = {
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }
