@@ -1,24 +1,18 @@
+const typeDef = `
+  type Query {
+    product: [Product!]!
+  }
+`
 
-const typeDefs = `
-    type Product{
-        id:ID!
-        productName:String!
-        productPrice: Int!
-        productStock: Int!
-    }
-
-    type Query{
-        product: [Product!]!
-    }
-                    `
-
-const resolvers = {
+const resolver = {
     Query: {
-        product: async(parents, args) => {
-            const product = await Product.findAll();
+        product: async(parents, args, context) => {
+            const { models } = context;
+            const product = await models.Product.findAll();
             return product
+            
         }
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

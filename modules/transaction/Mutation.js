@@ -1,22 +1,20 @@
-const { gql } = require("apollo-server")
-const { importModels } = require('../models');
-const md = importModels(sequelizeInstance, Sequelize);
-
-const typeDefs = gql`
+const typeDef = `
     input inputTransaction {
         id: ID!
         userId: String!
         transactionAmm: Int!
     }
-
-    type Mutation{
+    type Mutation {
         inputTransaction(input: inputTransaction!): Transaction
     }
                     `
 
-const resolvers = {
+const resolver = {
     Mutation: {
-        inputTransaction: async(parents, args) => {
+        inputTransaction: async(parent, args, context) => {
+
+            const { models } = context;
+            
             const transInput = {
                 id: args.input.id,
                 userId : args.input.userId,
@@ -24,17 +22,18 @@ const resolvers = {
                 createdAt: new Date(),
                 updatedAt: new Date()
             }
-            await md.Transaction.create(transInput)
+            await models.Transaction.create(transInput)
 
-            const tr = await md.Transaction.findOne({
+            const tr = await models.Transaction.findOne({
                 where: {id: transInput.id},
-                include: [{model: md.User}],
+                include: [{model: models.User}],
             })
 
             return tr
+            
             
         },
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

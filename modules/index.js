@@ -1,103 +1,81 @@
 const fs = require('fs');
 const path = require('path');
 
-const UserMutation = require('./user/Mutation.js');
-const ProductMutation = require('./product/Mutation.js');
-const TransactionMutation = require('./transaction/Mutation.js');
 
-const UserQuery = require('./user/Query.js');
-const ProductQuery = require('./product/Query.js');
-const TransactionQuery = require('./transaction/Query.js');
-
-const UserSchema = require('./user/Schema.js');
-const ProductSchema = require('./product/Schema.js');
-const TransactionSchema = require('./transaction/Schema.js');
-
-const DATASOURCES = 'datasources';
 const SCHEMA = 'Schema.js';
 const QUERY = 'Query.js';
 const MUTATION = 'Mutation.js';
-
 const requiredFiles = [SCHEMA, QUERY, MUTATION];
+const typeDefs = [];
+const resolvers = {};
+let queries = [];
+let mutations = [];
 
-module.exports = models => {
-  const typeDefs = [
-    UserMutation.typeDefs,
-    ProductMutation.typeDefs,
-    TransactionMutation.typeDefs
-    UserQuery.typeDefs,
-    ProductQuery.typeDefs,
-    TransactionQuery.typeDefs,
-    UserSchema.typeDefs,
-    ProductSchema.typeDefs,
-    TransactionSchema.typeDefs
-  ];
-  
-  const resolvers = {
-    Mutation: {
-      ...UserMutation.resolvers.Mutation,
-      ...ProductMutation.resolvers.Mutation,
-      ...TransactionMutation.resolvers.Mutation
-    },
-    Query: {
-      ...UserQuery.resolvers.Query,
-      ...ProductQuery.resolvers.Query,
-      ...TransactionQuery.resolvers.Query
-    },
-    ...UserSchema.resolvers,
-    ...ProductSchema.resolvers,
-    ...TransactionSchema.resolvers
-  };
-  
-  const queries_mutations_concat = typeDefs.reduce(
-    (accumulator, typeDefSingleItem) => {
-      if (typeDefSingleItem.includes('Mutation')) {
-        const { methods, rest } = extractMutation(typeDefSingleItem);
+module.exports = (args = {}) => {
+
+const modules = fs.readdirSync(__dirname, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+
+    for (const moduleName of modules) {
+      console.log('debug', `> ${moduleName} module.`);
+      const moduleDir = path.join(__dirname, moduleName);
+      const files = fs.readdirSync(moduleDir)
+        .filter(file => requiredFiles.includes(file));
+      console.log(files)
+
         
-        if (rest.length) {
-          accumulator.typeDefsNew.push(rest);
+
+
+        for (const file of files) {
+          const { typeDef, resolver } = require(path.join(moduleDir, file));
+          
+          if (typeDef.includes('Mutation')) {
+            const { methods, rest } = extractMutation(typeDef);
+            if (rest.length) {
+              typeDefs.push(rest);
+            }
+            mutations = mutations.concat(methods);
+          } else if (typeDef.includes('Query')) {
+            const { methods, rest } = extractQuery(typeDef);
+            if (rest.length) {
+              typeDefs.push(rest);
+            }
+            queries = queries.concat(methods);
+          } else {
+            const typeDefTrim = typeDef
+              .split('\n')
+              .filter(s => s.trim().length)
+              .join('\n');
+            typeDefs.push(typeDefTrim);
+          }
+    
+          for (const field in resolver) {
+            if (!resolvers[field]) {
+              resolvers[field] = resolver[field];
+            } else {
+              Object.assign(resolvers[field], resolver[field]);
+            }
+          }
+    
+          console.log('debug', `  - ${file} loaded.`);
         }
-        
-        accumulator.mutations = accumulator.mutations.concat(methods);
-        //
-      } else if (typeDefSingleItem.includes('Query')) {
-        const { methods, rest } = extractQuery(typeDefSingleItem);
-        if (rest.length) {
-          accumulator.typeDefsNew.push(rest);
-        }
-        
-        accumulator.queries = accumulator.queries.concat(methods);
-        //
-      } else {
-        const typeDefTrim = typeDef
-          .split('\n')
-          .filter(s => s.trim().length)
-          .join('\n');
-        accumulator.typeDefsNew.push(typeDefTrim);
+
+
+      
       }
-    },
-    {
-      typeDefsNew: [...typeDefs],
-      queries: [],
-      mutations: []
-    }
-  );
-  
-  // Destruct --> men-de-strukturisasi
-  const {
-    queries,
-    mutations,
-    typeDefsNew
-  } = queries_mutations_concat;
 
-  typeDefsNew.push(mergeQuery(queries));
-  typeDefsNew.push(mergeMutation(mutations));
+      
+      typeDefs.push(mergeQuery(queries));
+      typeDefs.push(mergeMutation(mutations));
+      
 
-  return {
-    typeDefsNew,
-    resolvers
-  };
-};
+      return {
+        typeDefs,
+        resolvers,
+      };
+
+}
 
 function extractQuery(typeDef) {
   return extract('Query', typeDef);
@@ -141,8 +119,3 @@ function merge(type, methods) {
   return lines.join('\n');
 }
 
-function isEmptySchema(moduleDir) {
-  const { typeDef } = require(path.join(moduleDir, SCHEMA));
-  const re = /{\s*}/;
-  return re.test(typeDef);
-}

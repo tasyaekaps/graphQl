@@ -1,20 +1,20 @@
-
-const typeDefs = `
-    input InputProduct{
+const typeDef = `
+    input InputProduct {
         productName: String!
         productPrice: Int!
         productStock: Int!
     }
-
-    type Mutation{
+    type Mutation {
         createProduct(input: InputProduct!): Product
         deleteProduct(id:ID!) : [Product!]!
     }
-                    `
+`
 
-const resolvers = {
+const resolver = {
     Mutation: {
-        createProduct: async(parents, args) => {
+        createProduct: async(parents, args, context) => {
+            const { models } = context;
+
             const product = {
                 id: args.input.id,
                 productName: args.input.productName,
@@ -24,21 +24,25 @@ const resolvers = {
                 updatedAt: new Date()
             }
 
-            await md.Product.create(product)
+            await models.Product.create(product)
 
             return product
+            
         },
 
-        deleteProduct: async(parents, args) => {
-            await md.Product.destroy({
+        deleteProduct: async(parent, args, context) => {
+            const { models } = context;
+
+            await models.Product.destroy({
                 where: {
                     id: args.id
                 }
             })
 
-            return (await md.product.findAll())
+            return (await models.product.findAll())
+            
         }
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

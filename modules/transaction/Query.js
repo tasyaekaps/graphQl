@@ -1,25 +1,21 @@
-const { gql } = require("apollo-server")
-const { importModels } = require('../models');
-const md = importModels(sequelizeInstance, Sequelize);
-
-const typeDefs = gql`
-    type Transaction{
-        users: User
-        transactionAmm: String!
-        transactiondetails: [TransactionDetail]
-    }
+const typeDef = `
+  type Query {
+    transaction(id: ID!): Transaction
+  }
 `
 
-const resolvers = {
+const resolver = {
     Query: {
-        transaction: async(parents, args) => {
-            const tr =  await md.Transaction.findOne({where:{
+        transaction: async(parent, args, context) => {
+            const { models } = context;
+            
+            const tr =  await models.Transaction.findOne({where:{
                  id: args.id
                  },
                  include: [
-                     {model: md.User},
-                     {model: md.TransactionsDetail, include:[
-                         {model: md.Product}
+                     {model: models.User},
+                     {model: models.TransactionsDetail, include:[
+                         {model: models.Product}
                      ]}
              ]})
  
@@ -28,4 +24,4 @@ const resolvers = {
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }

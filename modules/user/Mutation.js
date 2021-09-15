@@ -1,8 +1,5 @@
-const { gql } = require("apollo-server")
-const { importModels } = require('../models');
-const md = importModels(sequelizeInstance, Sequelize);
-
-const typeDefs = gql`
+var bcrypt = require("bcryptjs");
+const typeDef = `
     input inputUser {
         id: ID!
         username: String!
@@ -10,16 +7,18 @@ const typeDefs = gql`
         lastName: String!
         password: String!
     }
-
-    type Mutation{
+    type Mutation {
         createUser(input: inputUser!): User
     }
                     `
 
-const resolvers = {
+const resolver = {
     Mutation: {
-        createUser: async(parents, args) => {
+        createUser: async(parents, args, context) => {
+            const { models } = context;
+            
             const user = {
+                id: args.input.id,
                 username: args.input.username,
                 firstName: args.input.firstName,
                 lastName: args.input.lastName,
@@ -28,13 +27,14 @@ const resolvers = {
                 updatedAt: new Date()
             }
 
-            await md.User.create(user);
+            await models.User.create(user);
 
             
 
             return user;
+            
         },
     }
 }
 
-module.exports = { typeDefs, resolvers }
+module.exports = { typeDef, resolver }
